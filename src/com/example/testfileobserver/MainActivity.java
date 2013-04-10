@@ -7,6 +7,8 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Bundle;
 import android.app.Activity;
 import android.graphics.Bitmap;
@@ -20,7 +22,30 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		findImageDires("/");
+		Set<File> imageDirs = findImageDires("/");
+		int i = 0;
+		for(File dirs : imageDirs){
+			File listFiles[] = dirs.listFiles();
+			for(File file : listFiles){
+				if(file.isFile()){
+					BitmapFactory.Options options = new BitmapFactory.Options();
+					options.inJustDecodeBounds = true;
+					BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+					// Log.e("HOGEHOGE", String.format("MimeType : %s, %s", options.outMimeType, file.getAbsolutePath()));
+					i++;
+					MediaScannerConnection.scanFile(getApplicationContext(),
+							new String[]{file.getAbsolutePath()},
+							new String[]{options.outMimeType},
+							new MediaScannerConnection.OnScanCompletedListener() {
+								@Override
+								public void onScanCompleted(String path, Uri uri) {
+									Log.e("HOGEHOGE", String.format("onScanCompleted %s", path));
+								}
+							});
+				}
+			}
+		}
+		Log.e("HOGEHOGE", String.format("scanFile : %d", i));
 	}
 	
 	private Set<File> findImageDires(String path){
@@ -48,10 +73,16 @@ public class MainActivity extends Activity {
 					}
 					else if(a.isFile()){
 						if(! imageFileDirs.contains(a.getParentFile())){
+//							BitmapFactory.Options options = new BitmapFactory.Options();
+//							options.inJustDecodeBounds = true;
+//							BitmapFactory.decodeFile(a.getAbsolutePath(), options);
+//							if(options.outHeight != -1){
+//								imageFileDirs.add(a.getParentFile());
+//							}
 							Bitmap b = BitmapFactory.decodeFile(a.getAbsolutePath());
 							if(b != null){
-								imageFileDirs.add(a.getParentFile());
 								b.recycle();
+								imageFileDirs.add(a.getParentFile());
 							}
 						}
 					}
